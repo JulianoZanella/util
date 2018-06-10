@@ -295,23 +295,23 @@ public class Database {
                                     ).invoke(obj, resultSet.getString(field));
                                     break;
 
-                                case "java.lang.Integer":
-                                    obj.getClass().getMethod(m.getName(), Integer.class
+                                case "int":
+                                    obj.getClass().getMethod(m.getName(), int.class
                                     ).invoke(obj, resultSet.getInt(field));
                                     break;
 
-                                case "java.lang.Double":
-                                    obj.getClass().getMethod(m.getName(), Double.class
+                                case "double":
+                                    obj.getClass().getMethod(m.getName(), double.class
                                     ).invoke(obj, resultSet.getDouble(field));
                                     break;
 
-                                case "java.lang.Boolean":
-                                    obj.getClass().getMethod(m.getName(), Boolean.class
+                                case "boolean":
+                                    obj.getClass().getMethod(m.getName(), boolean.class
                                     ).invoke(obj, resultSet.getBoolean(field));
                                     break;
 
-                                case "java.lang.Character":
-                                    obj.getClass().getMethod(m.getName(), Character.class
+                                case "char":
+                                    obj.getClass().getMethod(m.getName(), char.class
                                     ).invoke(obj, resultSet.getString(field).charAt(0));
                                     break;
                                 default:
