@@ -9,8 +9,17 @@ package br.com.julianozanella.util.exception;
  */
 public class InvalidTypeArgsException extends Exception {
 
+    private String type = "";
+
+    public InvalidTypeArgsException() {
+    }
+
+    public InvalidTypeArgsException(String type) {
+        this.type = type;
+    }
+
     @Override
     public String getMessage() {
-        return "Invalid Type of Arguments,\nUse int, string, double, char or MysqlDate.";
+        return "Invalid Type of Arguments: "+type;
     }
 }

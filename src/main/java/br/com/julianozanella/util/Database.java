@@ -2,6 +2,7 @@ package br.com.julianozanella.util;
 
 import br.com.julianozanella.util.exception.ConnectionNotFoundException;
 import br.com.julianozanella.util.exception.InvalidTypeArgsException;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,14 +12,14 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 /**
- *
  * @author Juliano Zanella
- *
+ * <p>
  * Contains database utilities
  */
 public class Database {
@@ -28,34 +29,30 @@ public class Database {
     private static String driver;
 
     /**
-     *
      * Create the database connection and maintain, use only once. ****Be sure
      * to connect before using any method.****
      *
-     *
-     * @param url The database url. EX:
-     * "jdbc:mysql://localhost:3306/databaseName"
-     * @param user The database user. Ex: "root"
+     * @param url      The database url. EX:
+     *                 "jdbc:mysql://localhost:3306/databaseName"
+     * @param user     The database user. Ex: "root"
      * @param password The database password
-     * @throws SQLException
-     * @throws ClassNotFoundException
+     * @throws SQLException           SqlException
+     * @throws ClassNotFoundException Class not found
      */
     public static void createConnection(String url, String user, String password) throws SQLException, ClassNotFoundException {
         makeConnection(url, user, password, DRIVER);
     }
 
     /**
-     * @deprecated For no mysql databases Create the database connection and
-     * maintain, use only once. ****Be sure to connect before using any
-     * method.****
-     *
-     * @param url The database url. EX:
-     * "jdbc:mysql://localhost:3306/databaseName"
-     * @param user The database user. Ex: "root"
+     * @param url      The database url. EX:
+     *                 "jdbc:mysql://localhost:3306/databaseName"
+     * @param user     The database user. Ex: "root"
      * @param password The database password
-     * @param driver The connection driver. Ex: "com.mysql.jdbc.Driver"
+     * @param driver   The connection driver. Ex: "com.mysql.jdbc.Driver"
      * @throws SQLException
-     * @throws ClassNotFoundException
+     * @throws ClassNotFoundException //deprecated For no mysql databases Create the database connection and
+     *                                maintain, use only once. ****Be sure to connect before using any
+     *                                method.****
      */
     public static void makeConnection(String url, String user, String password, String driver) throws SQLException, ClassNotFoundException {
         if (connection == null) {
@@ -66,7 +63,6 @@ public class Database {
     }
 
     /**
-     *
      * @return The connection with database.
      */
     public static Connection getConnection() {
@@ -80,10 +76,10 @@ public class Database {
     /**
      * Insert into database
      *
-     * @param tableName Table name in database. Ex: person
+     * @param tableName       Table name in database. Ex: person
      * @param fieldsAndValues Pairs of fields and values ​​to enter, the fields
-     * must have the same name in the database table. EX: <b>"name", "Test"</b>,
-     * <b>"age", 18</b>
+     *                        must have the same name in the database table. EX: <b>"name", "Test"</b>,
+     *                        <b>"age", 18</b>
      * @throws InvalidTypeArgsException
      * @throws SQLException
      * @throws ConnectionNotFoundException
@@ -113,11 +109,13 @@ public class Database {
                 } else if (object instanceof Double) {
                     stmt.setDouble(index, (double) object);
                 } else if (object instanceof Character) {
-                    stmt.setString(index, (String) object);
+                    stmt.setString(index, "" + ((Character) object));
                 } else if (object instanceof Date) {
                     stmt.setDate(index, (Date) object);
+                } else if (object instanceof LocalDate) {
+                    stmt.setDate(index, DateUtil.getSQLDate((LocalDate) object));
                 } else {
-                    throw new InvalidTypeArgsException();
+                    throw new InvalidTypeArgsException(object.getClass().getSimpleName());
                 }
                 index++;
             }
@@ -145,9 +143,8 @@ public class Database {
      * Insert into database the object. <b>The attributes must have the same
      * name, as well as the name of the class that is the name of the table.</b>
      *
-     * @param object The fill object to insert into database.
+     * @param object        The fill object to insert into database.
      * @param autoIncrement if false, insert also the primary key code.
-     *
      * @throws IllegalAccessException
      * @throws SQLException
      * @throws ClassNotFoundException
@@ -201,14 +198,14 @@ public class Database {
      * @throws InvocationTargetException
      * @throws ConnectionNotFoundException
      */
-    public static List<Object> select(Class clazz) throws SQLException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, InvocationTargetException, ConnectionNotFoundException {
+    public static List<Object> select(Class clazz) throws SQLException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, InvocationTargetException, ConnectionNotFoundException, InvalidTypeArgsException {
         return select(clazz, 0, "");
     }
 
     /**
      * Selects the field in the table that has the code as the primary key.
      *
-     * @param clazz The class of objects that will be populated with the result of the query.
+     * @param clazz  The class of objects that will be populated with the result of the query.
      * @param codeId The primary code.
      * @return The list of these objects. <b>Convert each one in turn.</b>
      * @throws SQLException
@@ -219,14 +216,14 @@ public class Database {
      * @throws InvocationTargetException
      * @throws ConnectionNotFoundException
      */
-    public static List<Object> select(Class clazz, int codeId) throws SQLException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, InvocationTargetException, ConnectionNotFoundException {
+    public static List<Object> select(Class clazz, int codeId) throws SQLException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, InvocationTargetException, ConnectionNotFoundException, InvalidTypeArgsException {
         return select(clazz, codeId, "");
     }
 
     /**
      * Selects the fields in the table that meet the condition.
      *
-     * @param clazz The class of objects that will be populated with the result of the query.
+     * @param clazz       The class of objects that will be populated with the result of the query.
      * @param whereClause The condition. <b>Ex: "name LIKE J%"</b>
      * @return The list of these objects. <b>Convert each one in turn.</b>
      * @throws SQLException
@@ -237,12 +234,11 @@ public class Database {
      * @throws InvocationTargetException
      * @throws ConnectionNotFoundException
      */
-    public static List<Object> select(Class clazz, String whereClause) throws SQLException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, InvocationTargetException, ConnectionNotFoundException {
+    public static List<Object> select(Class clazz, String whereClause) throws SQLException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, InvocationTargetException, ConnectionNotFoundException, InvalidTypeArgsException {
         return select(clazz, 0, whereClause);
     }
 
     /**
-     *
      * Selects all fields in the table.
      *
      * @param c
@@ -262,7 +258,7 @@ public class Database {
             IllegalAccessException,
             NoSuchMethodException,
             SecurityException,
-            InvocationTargetException, ConnectionNotFoundException {
+            InvocationTargetException, ConnectionNotFoundException, InvalidTypeArgsException {
         if (connection == null) {
             throw new ConnectionNotFoundException();
         }
@@ -314,12 +310,17 @@ public class Database {
                                     obj.getClass().getMethod(m.getName(), char.class
                                     ).invoke(obj, resultSet.getString(field).charAt(0));
                                     break;
+                                case "java.sql.Date":
+                                    args1[0] = Date.class;
+                                    obj.getClass().getMethod(m.getName(),
+                                            args1).invoke(obj, resultSet.getDate(field));
+                                    break;
+                                case   "java.time.LocalDate":
+                                    args1[0] = LocalDate.class;
+                                    obj.getClass().getMethod(m.getName(),
+                                            args1).invoke(obj, (resultSet.getDate(field)).toLocalDate());
                                 default:
-                                    if (parameterTypes[0].getName().contains("Date")) {
-                                        args1[0] = Date.class;
-                                        obj.getClass().getMethod(m.getName(),
-                                                args1).invoke(obj, resultSet.getDate(field));
-                                    }
+                                    throw new InvalidTypeArgsException(parameterTypes[0].getName());
                             }
                         }
                     }
@@ -329,6 +330,20 @@ public class Database {
 
         }
         return list;
+    }
+
+
+    private static ResultSet select(String tableName) throws ConnectionNotFoundException, SQLException {
+        return select(tableName, 0);
+    }
+
+    private static ResultSet select(String tableName, int id) throws ConnectionNotFoundException, SQLException {
+        String sql = "SELECT * FROM " + tableName;
+        if (id > 0) {
+            sql += " WHERE " + getPK(tableName) + " = " + id;
+        }
+        PreparedStatement stmt = connection.prepareStatement(sql);
+        return stmt.executeQuery();
     }
 
     private static String getPK(String tableName) throws SQLException, ConnectionNotFoundException {
@@ -375,7 +390,7 @@ public class Database {
      * <b>The attributes must have the same
      * name, as well as the name of the class that is the name of the table.</b>
      *
-     * @param object The fill object to update into database.
+     * @param object      The fill object to update into database.
      * @param whereClause The where clause to update the object. <b>Ex: "city LIKE 'Alabama'".</b>
      * @throws IllegalAccessException
      * @throws SQLException
@@ -421,10 +436,10 @@ public class Database {
     /**
      * Update in the database, by the primary key code.
      *
-     * @param tableName The name of table.
+     * @param tableName       The name of table.
      * @param fieldsAndValues Pairs of fields and values ​​to enter, the fields
-     * must have the same name in the database table. EX: <b>"name", "Test"; "age", 18</b>
-     * @param codeId The primary key code.
+     *                        must have the same name in the database table. EX: <b>"name", "Test"; "age", 18</b>
+     * @param codeId          The primary key code.
      * @throws InvalidTypeArgsException
      * @throws SQLException
      * @throws ConnectionNotFoundException
@@ -436,10 +451,10 @@ public class Database {
     /**
      * Update in the database, by the where clause.
      *
-     * @param tableName The name of table.
+     * @param tableName       The name of table.
      * @param fieldsAndValues Pairs of fields and values ​​to enter, the fields
-     * must have the same name in the database table. EX: <b>"name", "Test"; "age", 18</b>
-     * @param whereClause The condition. <b>Ex: "name LIKE J%"</b>
+     *                        must have the same name in the database table. EX: <b>"name", "Test"; "age", 18</b>
+     * @param whereClause     The condition. <b>Ex: "name LIKE J%"</b>
      * @throws SQLException
      * @throws InvalidTypeArgsException
      * @throws ConnectionNotFoundException
@@ -476,8 +491,10 @@ public class Database {
                 stmt.setString(index, "" + ((Character) value));
             } else if (value instanceof Double) {
                 stmt.setDouble(index, (Double) value);
+            } else if (value instanceof LocalDate) {
+                stmt.setDate(index, DateUtil.getSQLDate((LocalDate) value));
             } else {
-                throw new InvalidTypeArgsException();
+                throw new InvalidTypeArgsException(value.getClass().getSimpleName());
             }
             index++;
         }
@@ -508,7 +525,7 @@ public class Database {
      * <b>The attributes must have the same
      * name, as well as the name of the class that is the name of the table.</b>
      *
-     * @param object The fill object to delete into database.
+     * @param object      The fill object to delete into database.
      * @param whereClause The where clause to delete. <b>Ex: "name LIKE J%"</b>
      * @throws IllegalAccessException
      * @throws SQLException
@@ -547,8 +564,9 @@ public class Database {
 
     /**
      * Delete in database by primary key.
+     *
      * @param tableName The name of table.
-     * @param codeId The code from primary key.
+     * @param codeId    The code from primary key.
      * @throws SQLException
      * @throws ConnectionNotFoundException
      * @throws InvalidTypeArgsException
@@ -559,7 +577,8 @@ public class Database {
 
     /**
      * Delete in database by where clause.
-     * @param tableName The name of table.
+     *
+     * @param tableName   The name of table.
      * @param whereClause The where clause to delete. <b>Ex: "name LIKE J%"</b>
      * @throws SQLException
      * @throws ConnectionNotFoundException
