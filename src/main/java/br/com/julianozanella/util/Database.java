@@ -333,11 +333,11 @@ public class Database {
     }
 
 
-    private static ResultSet select(String tableName) throws ConnectionNotFoundException, SQLException {
+    public static ResultSet select(String tableName) throws ConnectionNotFoundException, SQLException {
         return select(tableName, 0);
     }
 
-    private static ResultSet select(String tableName, int id) throws ConnectionNotFoundException, SQLException {
+    public static ResultSet select(String tableName, int id) throws ConnectionNotFoundException, SQLException {
         String sql = "SELECT * FROM " + tableName;
         if (id > 0) {
             sql += " WHERE " + getPK(tableName) + " = " + id;
