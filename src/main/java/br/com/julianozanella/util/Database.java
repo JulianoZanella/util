@@ -98,6 +98,7 @@ public class Database {
         sql.delete(sql.length() - 2, sql.length());
         valuesString.delete(valuesString.length() - 2, valuesString.length());
         sql.append(") ");
+        valuesString.append(") ");
         sql.append(valuesString);
         try (PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
             int index = 1;
