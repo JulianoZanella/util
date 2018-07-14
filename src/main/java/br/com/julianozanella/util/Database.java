@@ -22,7 +22,7 @@ import java.util.List;
  * <p>
  * Contains database utilities
  */
-public class Database {
+public final class Database {
 
     private static Connection connection;
     private static final String DRIVER = "com.mysql.jdbc.Driver";
@@ -608,6 +608,29 @@ public class Database {
                 stmt.setInt(1, codeId);
             }
             stmt.execute();
+        }
+    }
+
+    public static void makeTransaction(PreparedStatement[] statements) throws SQLException {
+        try{
+            connection.setAutoCommit(false);
+            for (PreparedStatement stmt : statements){
+                stmt.executeUpdate();
+            }
+            connection.commit();
+        }catch (SQLException ex){
+            connection.rollback();
+            throw ex;
+        }finally {
+            for (PreparedStatement stmt : statements){
+                if(stmt != null){
+                    stmt.close();
+                }
+            }
+            if(connection != null){
+                connection.setAutoCommit(true);
+                connection.close();
+            }
         }
     }
 }
