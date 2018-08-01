@@ -24,9 +24,8 @@ import java.util.List;
  */
 public final class Database {
 
-    private static Connection connection;
     private static final String DRIVER = "com.mysql.jdbc.Driver";
-    private static String driver;
+    private static String url, user, password;
 
     /**
      * Create the database connection and maintain, use only once. ****Be sure
@@ -39,39 +38,21 @@ public final class Database {
      * @throws SQLException           SqlException
      * @throws ClassNotFoundException Class not found
      */
-    public static void createConnection(String url, String user, String password) throws SQLException, ClassNotFoundException {
-        makeConnection(url, user, password, DRIVER);
+    public static void createConnection(String url, String user, String password) {
+        Database.url = url;
+        Database.user = user;
+        Database.password = password;
     }
 
-    /**
-     * @param url      The database url. EX:
-     *                 "jdbc:mysql://localhost:3306/databaseName"
-     * @param user     The database user. Ex: "root"
-     * @param password The database password
-     * @param driver   The connection driver. Ex: "com.mysql.jdbc.Driver"
-     * @throws SQLException
-     * @throws ClassNotFoundException //deprecated For no mysql databases Create the database connection and
-     *                                maintain, use only once. ****Be sure to connect before using any
-     *                                method.****
-     */
-    public static void makeConnection(String url, String user, String password, String driver) throws SQLException, ClassNotFoundException {
-        if (connection == null) {
-            Database.driver = driver;
-            Class.forName(driver);
-            connection = DriverManager.getConnection(url, user, password);
-        }
-    }
 
     /**
      * @return The connection with database.
      */
-    public static Connection getConnection() {
-        return connection;
+    public static Connection getConnection() throws ClassNotFoundException, SQLException {
+        Class.forName(DRIVER);
+        return DriverManager.getConnection(url, user, password);
     }
 
-    public static String getDriver() {
-        return driver;
-    }
 
     /**
      * Insert into database
@@ -85,7 +66,10 @@ public final class Database {
      * @throws ConnectionNotFoundException
      */
     public static void insert(String tableName, HashMap<String, Object> fieldsAndValues) throws InvalidTypeArgsException, SQLException, ConnectionNotFoundException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         StringBuilder sql = new StringBuilder("INSERT INTO ").append(tableName).append(" (");
@@ -121,8 +105,8 @@ public final class Database {
                 index++;
             }
             stmt.execute();
-        } catch (SQLException ex) {
-            throw ex;
+        } finally {
+            connection.close();
         }
     }
 
@@ -152,7 +136,10 @@ public final class Database {
      * @throws ConnectionNotFoundException
      */
     public static void insert(Object object, boolean autoIncrement) throws SQLException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, ConnectionNotFoundException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         StringBuilder fields = new StringBuilder();
@@ -183,6 +170,8 @@ public final class Database {
                 + ")";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.execute();
+        } finally {
+            connection.close();
         }
     }
 
@@ -260,7 +249,10 @@ public final class Database {
             NoSuchMethodException,
             SecurityException,
             InvocationTargetException, ConnectionNotFoundException, InvalidTypeArgsException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         List<Object> list = new ArrayList<>();
@@ -316,7 +308,7 @@ public final class Database {
                                     obj.getClass().getMethod(m.getName(),
                                             args1).invoke(obj, resultSet.getDate(field));
                                     break;
-                                case   "java.time.LocalDate":
+                                case "java.time.LocalDate":
                                     args1[0] = LocalDate.class;
                                     obj.getClass().getMethod(m.getName(),
                                             args1).invoke(obj, (resultSet.getDate(field)).toLocalDate());
@@ -328,7 +320,8 @@ public final class Database {
                     list.add(obj);
                 }
             }
-
+        } finally {
+            connection.close();
         }
         return list;
     }
@@ -339,16 +332,26 @@ public final class Database {
     }
 
     public static ResultSet select(String tableName, int id) throws ConnectionNotFoundException, SQLException {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
+            throw new ConnectionNotFoundException();
+        }
         String sql = "SELECT * FROM " + tableName;
         if (id > 0) {
             sql += " WHERE " + getPK(tableName) + " = " + id;
         }
         PreparedStatement stmt = connection.prepareStatement(sql);
+        connection.close();
         return stmt.executeQuery();
     }
 
     private static String getPK(String tableName) throws SQLException, ConnectionNotFoundException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         String pK = "";
@@ -364,6 +367,7 @@ public final class Database {
         while (resultSet.next()) {
             pK = resultSet.getString("chave");
         }
+        connection.close();
         return pK;
     }
 
@@ -399,7 +403,10 @@ public final class Database {
      * @throws ConnectionNotFoundException
      */
     public static void update(Object object, String whereClause) throws ClassNotFoundException, SQLException, IllegalArgumentException, IllegalAccessException, ConnectionNotFoundException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         String className = object.getClass().getName();
@@ -430,6 +437,8 @@ public final class Database {
         String sql = "UPDATE " + table + " SET " + fields + " WHERE " + where + "";
         try (PreparedStatement stmt = connection.prepareCall(sql)) {
             stmt.execute();
+        } finally {
+            connection.close();
         }
 
     }
@@ -465,7 +474,10 @@ public final class Database {
     }
 
     private static void update(String tableName, HashMap<String, Object> fieldsAndValues, int codeId, String whereClause) throws SQLException, InvalidTypeArgsException, ConnectionNotFoundException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         String pk = getPK(tableName);
@@ -504,6 +516,7 @@ public final class Database {
         }
         stmt.execute();
         stmt.close();
+        connection.close();
     }
 
     /**
@@ -534,7 +547,10 @@ public final class Database {
      * @throws ConnectionNotFoundException
      */
     public static void delete(Object object, String whereClause) throws SQLException, ClassNotFoundException, IllegalAccessException, ConnectionNotFoundException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         Class cls = Class.forName(object.getClass().getName());
@@ -560,6 +576,8 @@ public final class Database {
                 stmt.setInt(1, idCode);
             }
             stmt.execute();
+        } finally {
+            connection.close();
         }
     }
 
@@ -590,7 +608,10 @@ public final class Database {
     }
 
     private static void delete(String tableName, int codeId, String whereClause) throws SQLException, ConnectionNotFoundException, InvalidTypeArgsException {
-        if (connection == null) {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
             throw new ConnectionNotFoundException();
         }
         if (codeId <= 0) {
@@ -608,26 +629,34 @@ public final class Database {
                 stmt.setInt(1, codeId);
             }
             stmt.execute();
+        } finally {
+            connection.close();
         }
     }
 
-    public static void makeTransaction(PreparedStatement[] statements) throws SQLException {
-        try{
+    public static void makeTransaction(PreparedStatement[] statements) throws SQLException, ConnectionNotFoundException {
+        Connection connection;
+        try {
+            connection = getConnection();
+        } catch (ClassNotFoundException e) {
+            throw new ConnectionNotFoundException();
+        }
+        try {
             connection.setAutoCommit(false);
-            for (PreparedStatement stmt : statements){
+            for (PreparedStatement stmt : statements) {
                 stmt.executeUpdate();
             }
             connection.commit();
-        }catch (SQLException ex){
+        } catch (SQLException ex) {
             connection.rollback();
             throw ex;
-        }finally {
-            for (PreparedStatement stmt : statements){
-                if(stmt != null){
+        } finally {
+            for (PreparedStatement stmt : statements) {
+                if (stmt != null) {
                     stmt.close();
                 }
             }
-            if(connection != null){
+            if (connection != null) {
                 connection.setAutoCommit(true);
                 connection.close();
             }
